@@ -1,6 +1,9 @@
 package com.test.happiParser;
 
+import java.io.File;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 
 import ca.uhn.hl7v2.DefaultHapiContext;
 import ca.uhn.hl7v2.HL7Exception;
@@ -13,6 +16,10 @@ import ca.uhn.hl7v2.parser.EncodingNotSupportedException;
 import ca.uhn.hl7v2.parser.Parser;
 import ca.uhn.hl7v2.util.Terser;
 import ca.uhn.hl7v2.validation.impl.NoValidation;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Created by ankit07 on 9/20/16.
@@ -47,6 +54,10 @@ public class Main {
             "IN1|2||BCP|BC PPO COLORADO|PO BOX 5747^^DENVER^CO^80217-5747||(408)-905-0350|311-16-3529|MEDICARE SUPPLEMENT||INFORMATION UNAVAILABLE|||||MARYOTT^JESSE^|SLF|19230324|4564 WEST RIVER DR^^HONOLULU^HI^81125^^^|||||||||||||||||PQC109A22034|||||||F||||||PQC109A22034\r" +
             "IN2|2|515-55-4543|||||||||||||||||||||||||||||||||||||||||U||||||||||||||||||||(408)-278-5231";
 
+        Main mainClass = new Main();
+
+        JsonObject config = mainClass.getConfig();
+
     HapiContext context = new DefaultHapiContext();
     context.setValidationContext(new NoValidation());
     Parser p = context.getGenericParser();
@@ -54,7 +65,16 @@ public class Main {
     try {
         hapiMsg = p.parse(msg2);
         Terser terser = new Terser(hapiMsg);
-        System.out.println(terser.get("/PID-3"));
+
+        JsonObject rowObject = new JsonObject();
+
+        JsonObject configBody = config.getAsJsonObject("ADT^A08");
+        Set<Map.Entry<String, JsonElement>> entrySet = configBody.entrySet();
+        for(Map.Entry<String,JsonElement> entry : entrySet){
+
+            rowObject.addProperty(entry.getKey(),terser.get(entry.getValue().getAsString()));
+        }
+
     } catch (EncodingNotSupportedException e) {
         e.printStackTrace();
         return;
@@ -65,5 +85,21 @@ public class Main {
 
 }
 
+    private JsonObject getConfig() {
+
+        JsonParser parser = new JsonParser();
+
+        try {
+            Object obj = parser.parse(new java.io.FileReader("path to your config"));
+            JsonObject jsonObject = (JsonObject) obj;
+            return jsonObject;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Exception::" + e.getMessage());
+
+        }
+
+        return null;
+    }
 
 }
